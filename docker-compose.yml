@@ -1,0 +1,66 @@
+version: '3'
+
+services:
+  #PHP Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    tty: true
+    env_file: ./src/.env
+    working_dir: /var/www
+    volumes:
+      - ./src/:/var/www
+      - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - teknasyon-network
+
+  #Nginx Service
+  webserver:
+    image: nginx:alpine
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./src/:/var/www
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      - teknasyon-network
+
+  #MySQL Service
+  db:
+    image: mysql:5.7.33
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: teknasyon
+      MYSQL_ROOT_PASSWORD: root
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysqldb
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - teknasyon-network
+
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+    restart: always
+    networks:
+      - teknasyon-network
+
+#Docker Networks
+networks:
+  teknasyon-network:
+    driver: bridge
+
+#Volumes
+volumes:
+  dbdata:
+    driver: local
